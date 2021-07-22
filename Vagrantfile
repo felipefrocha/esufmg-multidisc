@@ -145,15 +145,15 @@ Vagrant.configure(2) do |config|
   N=1
   (1..N).each do |machine_id|
     # Variable 
-    default_router = "192.168.15.1"
+    # default_router = "192.168.15.1"
 
     config.vm.define "machine#{machine_id}" do |machine|
     machine.vm.hostname = "nomad#{machine_id}"
-      machine.vm.network "private_network", ip: "192.168.121.1"
+      # machine.vm.network "private_network", ip: "192.168.121.1"
       machine.vm.network "public_network", ip: "192.168.15.#{70+machine_id}", bridge: "eno1"
       # Define machine size
       machine.vm.provider "virtualbox" do |vb|
-        vb.memory = "2048"
+        vb.memory = "4096"
         vb.cpus = 2
         vb.customize ["modifyvm", :id, "--cpuexecutioncap", "#{100/N}"]
       end 
@@ -168,20 +168,4 @@ Vagrant.configure(2) do |config|
   # Expose the nomad api and ui to the host
   # config.vm.network "forwarded_port", guest: 4646, host: 4646, auto_correct: true, host_ip: "127.0.0.1"
 
-  # Increase memory for Parallels Desktop
-  # config.vm.provider "parallels" do |p, o|
-  #   p.memory = "1024"
-  # end
-
-  # Increase memory for Virtualbox
-  # config.vm.provider "virtualbox" do |vb|
-  #       vb.memory = "1024"
-  # end
-
-  # Increase memory for VMware
-  # ["vmware_fusion", "vmware_workstation"].each do |p|
-  #   config.vm.provider p do |v|
-  #     v.vmx["memsize"] = "1024"
-  #   end
-  # end
 end
