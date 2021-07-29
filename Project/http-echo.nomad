@@ -1,7 +1,7 @@
 job "http-echo" {
   datacenters = ["rocha"]	
-  group "echo" {
-    count = 3
+  group "echos" {
+    count = 120
     network {
       // mbits = 100 # deprecated is no longer considered during the evaluation and scheduling
       port "http" {}
@@ -11,8 +11,10 @@ job "http-echo" {
       config {
         image = "hashicorp/http-echo:latest"
         args = [
-          "-listen", ":8080", "-text", "Teste maravilha!"
-        ] 
+          "-listen", ":${NOMAD_PORT_http}",
+          "-text", "Essa é a task ${NOMAD_TASK_NAME} da Giropops App que está sendo executado no IP ${NOMAD_IP_http} rodando na porta ${NOMAD_PORT_http}.",  
+        ]
+        ports = ["http"]
       }
       resources {
         cpu = 100
@@ -21,5 +23,3 @@ job "http-echo" {
     }
   }
 }
-
-b0:7b:25:64:ba:b0

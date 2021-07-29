@@ -57,6 +57,7 @@ WantedBy=multi-user.target
 
 EOF
 ) | sudo tee /etc/systemd/system/consul.service
+
 sudo systemctl daemon-reload
 (
 cat <<-EOF

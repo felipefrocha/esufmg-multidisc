@@ -11,3 +11,6 @@ clear:
 vms:
 	@echo Up vagrant
 	@vagrant up
+
+cp_files:
+	@scp -r Project machine1:/home/vagrant/
