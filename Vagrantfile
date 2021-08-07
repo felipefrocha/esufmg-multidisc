@@ -79,6 +79,9 @@ bind_addr = "0.0.0.0" # Listen on all IPv4
 advertise_addr = "192.168.15.71"
 
 bootstrap_expect=1
+
+
+
 EOF
 ) | sudo tee /etc/consul.d/consul.hcl
 
@@ -110,6 +113,10 @@ client {
   enabled = true
   network_interface = "eth1"
   servers = ["127.0.0.1:4646"]
+  options {
+    "docker.privileged.enabled" = "true"
+    "docker.volumes.enabled" = "true"
+  }
 }
 
 advertise {
@@ -122,6 +129,13 @@ consul {
  address = "192.168.15.7${MACHINE_ID}:8500"
 }
 
+# plugins "docker" {
+#   volumes {
+#     enabled      = true
+#     selinuxlabel = "z"
+#   }
+# }
+
 EOF
 ) | sudo tee /etc/nomad.d/nomad.hcl
 
@@ -132,6 +146,12 @@ cat <<-EOF
 NOMAD_ADDR=http://192.168.15.7${MACHINE_ID}:4646
 EOF
 ) | sudo tee /etc/profile.d/nomad.sh
+
+sudo usermod -G docker -a nomad
+
+sudo mkdir -p /opt/data
+sudo chown nomad:nomad /opt/data
+
 
 sudo systemctl enable nomad 
 sudo systemctl start nomad
@@ -157,16 +177,12 @@ Vagrant.configure(2) do |config|
         vb.memory = "4096"
         vb.cpus = 2
         vb.customize ["modifyvm", :id, "--cpuexecutioncap", "#{100/N}"]
-      end 
-      # machine.vm.provision :shell, :inline => "ip route delete default 2>&1 >/dev/null || true; ip route add default via #{default_router}"
+      end
+      machine.vm.synced_folder "Project/", "/home/vagrant/project"
       machine.vm.provision "shell", 
         inline: $script, 
         env: { "MACHINE_ID" => "#{machine_id}" },
         privileged: false
     end
   end
-  
-  # Expose the nomad api and ui to the host
-  # config.vm.network "forwarded_port", guest: 4646, host: 4646, auto_correct: true, host_ip: "127.0.0.1"
-
 end
