@@ -49,7 +49,7 @@ SCRIPT
 
 $configure_consul = <<SCRIPT
 
-sudocat > /etc/consul.d/consul.hcl <<-EOF
+sudo cat > /etc/consul.d/consul.hcl <<-EOF
 datacenter = "rocha"
 
 data_dir = "/opt/consul"
@@ -138,53 +138,7 @@ SCRIPT
 $configure_nomad_client = <<-SCRIPT
 
 sudo cat > /etc/nomad.d/nomad.hcl <<-EOF
-data_dir  = "/opt/nomad/data"
-bind_addr = "0.0.0.0"
-
-datacenter  = "rocha"
-region      = "minasgerais"
-
-server {
-  enabled = false
-}
-
-client {
-  enabled = true
-
-  network_interface = "eth1"
-
-  servers = [ "${NET_IP}1:4646","${NET_IP}2:4646","${NET_IP}3:4646" ]
-
-  options {
-    "diver.allowlist" = "docker,exec"
-    "docker.privileged.enabled" = "true"
-    "docker.volumes.enabled" = "true"
-  }
-
-}
-
-advertise {
-  http = "${NET_IP}${MACHINE_ID}"
-  rpc  = "${NET_IP}${MACHINE_ID}"
-  serf = "${NET_IP}${MACHINE_ID}:5648"
-}
-
-# consul {
-#  address = "${NET_IP}:8500"
-# }
-
-# plugins "docker" {
-#   volumes {
-#     enabled      = true
-#     selinuxlabel = "z"
-#   }
-# }
-
-EOF
-
-sudo cat > /etc/profile.d/nomad.sh <<-EOF
-NOMAD_ADDR=http://${NET_IP}:4646
-EOF
+/etc/profile.d/nomad.sh
 
 
 nomad -autocomplete-install
@@ -207,7 +161,7 @@ Vagrant.configure(2) do |config|
   N=6
   (1..N).each do |machine_id|
     # Variable 
-  ip_prefix = "192.168.15.7"
+    ip_prefix = "192.168.15.7"
 
     config.vm.define "machine#{machine_id}" do |machine|
   
@@ -224,37 +178,21 @@ Vagrant.configure(2) do |config|
       # machine.vm.synced_folder "project/", "/home/vagrant/project"
   
       # Provisioning
-      machine.vm.provision "shell", inline: $install_keys
-      
-      machine.vm.provision "shell", inline: $install_packages
-      
-      machine.vm.provision "shell", inline: $configure_docker 
-      
-      
-      if N > 1 && N < 4 
-
-        machine.vm.provision "shell", inline: $configure_consul,
-          env: { 
-            "NET_IP" => "#{ip_prefix}",
-            "MACHINE_ID" => "#{machine_id}"
-          },
-          privileged: false 
-
-        machine.vm.provision "shell", inline: $configure_nomad_server,
-          env: { 
-            "NET_IP" => "#{ip_prefix}",
-            "MACHINE_ID" => "#{machine_id}"
-          },
-          privileged: false 
-      else
-
-        machine.vm.provision "shell", inline: $configure_nomad_client,
-          env: { 
-            "NET_IP" => "#{ip_prefix}",
-            "MACHINE_ID" => "#{machine_id}"
-          },
-          privileged: false 
-      
+      if machine_id == N
+        machine.vm.provision :ansible do |ansible|
+          ansible.limit = "all"
+          ansible.playbook = "provisioning/ansible/main.yml"
+          ansible.verbose = false
+          ansible.groups = {
+            "masters" => ["machine1","machine2","machine3"],
+            "workers" => ["machine4","machine5","machine6"],
+            "all:children" => ["masters","workers"],
+            "all:vars" => {
+               "ansible_python_interpreter" => "/usr/bin/python3",
+               "user" => "vagrant"
+            }
+          }
+        end
       end
     end
   end

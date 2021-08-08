@@ -2,7 +2,7 @@ job "distprocess" {
   datacenters = ["rocha"]
   type = "batch"	
   group "processes" {
-    count = 5
+    count = 3
 
     network {
       // mbits = 100 # deprecated is no longer considered during the evaluation and scheduling
@@ -21,7 +21,7 @@ job "distprocess" {
         image = "felipefrocha89/testepy:latest"
         ports = ["http"]
         volumes = [
-          "/home/vagrant/home/docker/:/code"
+          "/home/vagrant/docker/:/code"
         ]
       }
       
