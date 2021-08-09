@@ -157,7 +157,7 @@ sudo systemctl start nomad
 SCRIPT
 
 Vagrant.configure(2) do |config|
-  # OS Type and image config
+  # # OS Type and image config
   config.vm.box         = "generic/ubuntu2004"
   config.vm.box_check_update = true
   
@@ -165,13 +165,13 @@ Vagrant.configure(2) do |config|
   config.vm.hostname = "nomadone"
 
   # Public Network eth1
-  config.vm.network "public_network", ip: "192.168.15.#{70+machine_id}", bridge: "eno1"
+  config.vm.network "public_network", ip: "192.168.15.71", bridge: "etho"
 
   # Define machine size
   config.vm.provider "virtualbox" do |vb|
     vb.memory = "4096"
     vb.cpus = 2
-    vb.customize ["modifyvm", :id, "--cpuexecutioncap", "#{100/N}"]
+    vb.customize ["modifyvm", :id, "--cpuexecutioncap", "#{50}"]
   end
   
   # shared folder
@@ -182,5 +182,5 @@ Vagrant.configure(2) do |config|
     inline: $script, 
     env: { "MACHINE_ID" => "1" },
     privileged: false
-  end
+  
 end

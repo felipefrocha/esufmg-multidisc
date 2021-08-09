@@ -6,11 +6,14 @@ install:
 	@sudo usermod -aG libvirt $$USER && sudo usermod -aG kvm $$USER
 
 clear:
-	@vagrant destroy -f
+	@cd nomad_vagrant/single_server; vagrant destroy -f
+	@cd nomad_vagrant/ha_server; vagrant destroy -f
+	@cd nomad_vagrant/all_in_one; vagrant destroy -f
 
-vms:
+single_server:
 	@echo Up vagrant
-	@vagrant up
+	@cd nomad_vagrant/single_server && make consul_server && vagrant up --provision
 
 cp_files:
-	@scp -r Project machine1:/home/vagrant/
+	@scp -i nomad_vagrant/${FOLDER}/.vagrant/machines/machine1/virtualbox/private_key -r ./Project/docker vagrant@192.168.15.71:/mnt/nfs_share/
+
