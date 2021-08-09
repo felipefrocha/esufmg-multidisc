@@ -120,7 +120,7 @@
 
     - name: Templates Consul
       ansible.builtin.template:
-        src: consul.j2
+        src: consul-client.j2
         dest: /etc/consul.d/consul.hcl
         owner: nomad
         group: nomad

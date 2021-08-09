@@ -1,6 +1,9 @@
 job "distprocess" {
+
   datacenters = ["rocha"]
+  
   type = "batch"	
+  
   group "processes" {
     count = 3
 
@@ -21,7 +24,7 @@ job "distprocess" {
         image = "felipefrocha89/testepy:latest"
         ports = ["http"]
         volumes = [
-          "/home/vagrant/docker/:/code"
+          "/mnt/nfs_clientshare/docker/:/code"
         ]
       }
       

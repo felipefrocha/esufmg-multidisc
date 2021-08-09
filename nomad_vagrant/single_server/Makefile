@@ -19,9 +19,7 @@ servers: vms
 	@vagrant provision machine1 machine2 machine3
 
 
-		# -p 8300-8302:8300-8302 \
-		# -p 8500-8502:8500-8502 \
-		# -p 8600:8600 \
+
 
 clients:
 	@vagrant provision machine4 machine5 machine6
@@ -38,15 +36,18 @@ clear_all: clear
 	@rm -rf .vagrant
 
 consul_server:
+	@docker container rm -f $$(docker container ls -aq) || echo ""
 	@docker run -d \
 		--name consul \
-		--network host \
-		-v ./consul/data:/opt/consul/data \
-		-v ./consul/config:/etc/consul.d/:ro\
-		hashicorp/consul
+		--net=host \
+		-v $$PWD/consul/data:/opt/consul/data \
+		-v $$PWD/consul/config:/etc/consul.d:ro\
+		-p 8300-8302:8300-8302 \
+		-p 8500-8502:8500-8502 \
+		-p 8600:8600 \
+		consul agent -config-dir /etc/consul.d
 
-single_server:
-	@vagrant up machine1
-	@ssh andromeda \
-		"cd ~/Documents/projects/pessoal/hashicorp/nomad/esufmg-multidisc/nomad_vagrant/single_server && vagrant up machine2 machine3 machine4"
-	# @vagrant up machine5 machine5 machine7
+single_server:consul_server
+	@vagrant up 
+	# @ssh andromeda \
+	# 	"cd ~/Documents/projects/pessoal/hashicorp/nomad/esufmg-multidisc/nomad_vagrant/single_server && vagrant up machine2 machine3 machine4
