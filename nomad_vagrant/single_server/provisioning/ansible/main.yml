@@ -2,6 +2,11 @@
 - hosts: all
   become: yes
   tasks:
+
+    - name: Register IP
+      shell: "echo {{ ansible_default_ipv4.address }}"
+      register: NOMAD_WORKERS_IP
+
     - name: Register current User
       become: no
       shell: id -u -n

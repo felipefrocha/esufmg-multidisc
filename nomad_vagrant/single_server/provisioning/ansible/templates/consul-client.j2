@@ -8,5 +8,5 @@ ui_config{
 
 server = false
 bind_addr = "0.0.0.0" # Listen on all IPv4
-advertise_addr = "{{NOMAD_WORKERS_IP}}"
+advertise_addr = "{{NOMAD_WORKERS_IP.stdout}}"
 start_join = ["192.168.15.55"]

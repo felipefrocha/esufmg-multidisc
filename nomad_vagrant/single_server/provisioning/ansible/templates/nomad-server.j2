@@ -6,7 +6,7 @@ region      = "minasgerais"
 
 server {
   enabled = true
-  bootstrap_expect = 3
+  bootstrap_expect = 1
 }
 
 client {
@@ -34,3 +34,11 @@ consul {
 #     selinuxlabel = "z"
 #   }
 # }
+
+telemetry {
+  collection_interval = "1s"
+  disable_hostname = true
+  prometheus_metrics = true
+  publish_allocation_metrics = true
+  publish_node_metrics = true
+}
