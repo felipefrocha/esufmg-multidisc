@@ -1,0 +1,17 @@
+version: "2.4"
+services: 
+  api:
+    image: testepy
+    build:
+      context: .
+    volumes:
+      - ./:/code
+    user: "1000:1000"
+    mem_limit: 256m
+    cpus: 0.4
+    cpuset: 1,2,3,4,5
+    environment: 
+      NAME_FILE: testeB
+      INTERACTIONS: 2000000
+
+    

@@ -1,0 +1,43 @@
+data_dir  = "/opt/nomad/data"
+bind_addr = "0.0.0.0"
+
+datacenter  = "rocha"
+region      = "minasgerais"
+
+server {
+  enabled = false
+}
+
+client {
+  enabled = true
+
+  network_interface = "eth1"
+
+  server_join {
+    retry_join = [ "192.168.15.71:4647","192.168.15.72:4647","192.168.15.73:4647" ]
+    retry_interval = "15s"
+  }
+
+  options {
+    "diver.allowlist" = "docker,exec"
+    "docker.privileged.enabled" = "true"
+    "docker.volumes.enabled" = "true"
+  }
+}
+
+advertise {
+  http = "{{NOMAD_WORKERS_IP.stdout}}:4646"
+  rpc  = "{{NOMAD_WORKERS_IP.stdout}}:4647"
+  serf = "{{NOMAD_WORKERS_IP.stdout}}:4648"
+}
+
+# consul {
+#  address = "{NET_IP}:8500"
+# }
+
+# plugins "docker" {
+#   volumes {
+#     enabled      = true
+#     selinuxlabel = "z"
+#   }
+# }

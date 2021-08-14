@@ -1,0 +1,199 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+$install_keys = <<SCRIPT
+echo "Installing Docker..."
+sudo apt-get update
+sudo apt-get remove docker docker-engine docker.io
+
+echo '* libraries/restart-without-asking boolean true' | sudo debconf-set-selections
+sudo apt-get install apt-transport-https ca-certificates curl software-properties-common -y
+
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg |  sudo apt-key add -
+
+sudo apt-key fingerprint 0EBFCD88
+sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+
+SCRIPT
+
+$install_packages = <<SCRIPT
+# Packages required for nomad & consul
+sudo apt-get install unzip curl vim -y
+
+echo "Install Hashicorp key"
+curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
+sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
+
+sudo apt-get update
+sudo apt-get install -y docker-ce nomad consul
+
+for bin in cfssl cfssl-certinfo cfssljson
+  do
+    echo "Installing $bin..."
+    curl -sSL https://pkg.cfssl.org/R1.2/${bin}_linux-amd64 > /tmp/${bin}
+    sudo install /tmp/${bin} /usr/local/bin/${bin}
+  done;
+
+SCRIPT
+
+$configure_docker = <<SCRIPT
+
+# Restart docker to make sure we get the latest version of the daemon if there is an upgrade
+sudo service docker restart
+
+# Make sure we can actually use docker as the vagrant user
+sudo usermod -aG docker vagrant
+sudo docker --version
+
+SCRIPT
+
+$configure_consul = <<SCRIPT
+
+sudo cat > /etc/consul.d/consul.hcl <<-EOF
+datacenter = "rocha"
+
+data_dir = "/opt/consul"
+
+client_addr = "0.0.0.0"
+
+ui_config {
+  enabled = true
+}
+
+server = true
+
+bind_addr = "[::]" # Listen on all IPv6
+bind_addr = "0.0.0.0" # Listen on all IPv4
+
+advertise_addr = "${NET_IP}"
+
+bootstrap_expect=1
+
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl disaable consul.service
+sudo systemctl stop consul
+
+SCRIPT
+
+$configure_nomad_server = <<-SCRIPT
+
+sudo cat > /etc/nomad.d/nomad.hcl <<-EOF
+data_dir  = "/opt/nomad/data"
+bind_addr = "0.0.0.0"
+
+datacenter  = "rocha"
+region      = "minasgerais"
+
+server {
+  enabled = true
+  bootstrap_expect = 3
+  server_join {
+    retry_join = [ "${NET_IP}1:4648","${NET_IP}2:4648","${NET_IP}3:4648" ]
+    retry_interval = "15s"
+  }
+}
+
+client {
+  enable = false
+}
+
+advertise {
+  http = "${NET_IP}${MACHINE_ID}"
+  rpc  = "${NET_IP}${MACHINE_ID}"
+  serf = "${NET_IP}${MACHINE_ID}:5648"
+}
+
+# consul {
+#  address = "${CONSUL_IP}:8500"
+# }
+
+# plugins "docker" {
+#   volumes {
+#     enabled      = true
+#     selinuxlabel = "z"
+#   }
+# }
+
+EOF
+
+sudo cat > /etc/profile.d/nomad.sh <<-EOF
+NOMAD_ADDR=http://${NET_IP}${MACHINE_ID}:4646
+EOF
+
+
+nomad -autocomplete-install
+
+sudo usermod -aG docker nomad
+
+sudo mkdir -p /opt/nomad/data
+sudo chown nomad:nomad /opt/nomad/data
+
+sudo systemctl enable nomad 
+sudo systemctl start nomad
+
+SCRIPT
+
+$configure_nomad_client = <<-SCRIPT
+
+sudo cat > /etc/nomad.d/nomad.hcl <<-EOF
+/etc/profile.d/nomad.sh
+
+
+nomad -autocomplete-install
+
+sudo usermod -aG docker nomad
+
+sudo mkdir -p /opt/nomad/data
+sudo chown nomad:nomad /opt/nomad/data
+
+sudo systemctl enable nomad 
+sudo systemctl start nomad
+
+SCRIPT
+
+Vagrant.configure(2) do |config|
+  # config.vm.box = "bento/ubuntu-18.04" # 18.04 LTS
+  config.vm.box         = "generic/ubuntu2004"
+  config.vm.box_check_update = true
+
+  N=6
+  (1..N).each do |machine_id|
+    # Variable 
+    ip_prefix = "192.168.15.7"
+
+    config.vm.define "machine#{machine_id}" do |machine|
+  
+      machine.vm.hostname = "nomad#{machine_id}"
+
+      machine.vm.network "public_network", ip: "192.168.15.#{70+machine_id}", bridge: "eth0"
+  
+      machine.vm.provider "virtualbox" do |vb|
+        vb.memory = "1024"
+        vb.cpus = 1
+        vb.customize ["modifyvm", :id, "--cpuexecutioncap", "#{100/N}"]
+      end
+  
+      # machine.vm.synced_folder "project/", "/home/vagrant/project"
+  
+      # Provisioning
+      if machine_id == N
+        machine.vm.provision :ansible do |ansible|
+          ansible.limit = "all"
+          ansible.playbook = "provisioning/ansible/main.yml"
+          ansible.verbose = false
+          ansible.groups = {
+            "masters" => ["machine1","machine2","machine3"],
+            "workers" => ["machine4","machine5","machine6"],
+            "all:children" => ["masters","workers"],
+            "all:vars" => {
+               "ansible_python_interpreter" => "/usr/bin/python3",
+               "user" => "vagrant"
+            }
+          }
+        end
+      end
+    end
+  end
+end

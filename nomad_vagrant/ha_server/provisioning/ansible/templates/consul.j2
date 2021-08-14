@@ -1,0 +1,16 @@
+datacenter = "rocha"
+
+data_dir = "/opt/consul"
+
+ui_config {
+  enabled = true
+}
+
+server = true
+
+bind_addr = "[::]" # Listen on all IPv6
+bind_addr = "0.0.0.0" # Listen on all IPv4
+
+advertise_addr = "{CONSUL_SEVER_IP}"
+
+bootstrap_expect=1
