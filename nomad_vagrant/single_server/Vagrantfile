@@ -158,7 +158,7 @@ Vagrant.configure(2) do |config|
   config.vm.box         = "generic/ubuntu2004"
   config.vm.box_check_update = true
 
-  N=3
+  N=6
   (1..N).each do |machine_id|
     # Variable 
     ip_prefix = "192.168.15.7"
@@ -168,24 +168,29 @@ Vagrant.configure(2) do |config|
       machine.vm.hostname = "nomad#{machine_id}"
 
       machine.vm.network "public_network", ip: "192.168.15.#{70+machine_id}", bridge: "eth0"
+      machine.vm.network "private_network", type: "dhcp"
   
       machine.vm.provider "virtualbox" do |vb|
         vb.memory = "4096"
         vb.cpus = 2
         vb.customize ["modifyvm", :id, "--cpuexecutioncap", "#{100/N}"]
       end
+
+      machine.vm.provision "shell", inline: "echo 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDHdkpnGP1fB/fSI5vOAdHWME71G74FmP2ACFGNizWujgg+fSkUYCihD/4uIVJxkWnH37boBFrA2iAKIrNq9/1DY2BuQskOCIjdCeWfgVwJjSPr/vQkb/HGzTcBah4tOMh5cycDGE6UAKEotJMbO2mN8fbVoOBjtbYcTtb4a4QLGs2cD6e1yWgyAmWXoiw5DmAZxSkDLjTVUh2JdWuBAcWQRoDdVkS0cwWFR4LZhzxY1fl7jCFnbDFz8xTJupZ4uMq4JnAcwpbhVCnmxm26vbLfmRMdTwjJuT96jXSNpvgJ/vcT0UA0dwati4UFNf9YVsbxhYgD6X4Z96bo/7+8c4Aro3VV4Tyzh4J0QU5rJVUUF3GoQbNUdkSecNePi7tKeE38WF6obFc2KllyQt543h9qktXWpWdTOlOYzycKPrxaBy+VSiVkKW4QDJvGy1HzMdki3yokYlK4XFVL8iaiOr4DVieEVyA0Z6feUnPS/Ni2VtuIgAN+c6SewyZ4vUpt4DWagE25REr/0aIySCwEk2tLj5tMIo3uv4cC1mLezG1AzG1Wi6pcZVfsRMalTiMpjAmjiQXB/e0hX3JqE/EY3cFA5W7JpatOBabx7/eY3sctGfyzWbUysXWVghnAprDvVujK1yh/xC8nxKpMqKblvrNIl5eO31YyBmtBfxdE6JT5+w== feliperocha@wks11830' >> /home/vagrant/.ssh/authorized_keys"
   
-      # machine.vm.synced_folder "project/", "/home/vagrant/project"
+      # machine.vm.synced_folder "~/Documents/projects/pessoal/hashicorp/nomad/esufmg-multidisc/nomad_vagrant/single_server/project/",
+      #   "/home/vagrant/project",
+      #    type: "nfs"
   
       # Provisioning
-      if machine_id == N
+      if false
         machine.vm.provision :ansible do |ansible|
           ansible.limit = "all"
           ansible.playbook = "provisioning/ansible/main.yml"
           ansible.verbose = false
           ansible.groups = {
             "masters" => ["machine1"],
-            "workers" => ["machine2","machine3","machine4"],
+            "workers" => ["machine2","machine3","machine4","machine5","machine6"],
             "all:children" => ["masters","workers"],
             "all:vars" => {
                "ansible_python_interpreter" => "/usr/bin/python3",

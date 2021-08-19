@@ -2,11 +2,6 @@
 - hosts: all
   become: yes
   tasks:
-
-    - name: Register IP
-      shell: "echo {{ ansible_default_ipv4.address }}"
-      register: NOMAD_WORKERS_IP
-
     - name: Register current User
       become: no
       shell: id -u -n
@@ -123,14 +118,6 @@
         EOF
         chmod 644 /etc/systemd/system/vagrant.service
 
-    - name: Templates Consul
-      ansible.builtin.template:
-        src: consul-client.j2
-        dest: /etc/consul.d/consul.hcl
-        owner: nomad
-        group: nomad
-        mode: 0644
-
     - name: Ensure Vagrant service
       systemd:
         name: vagrant
@@ -143,14 +130,6 @@
         enabled: yes
         state: started
     
-    - name: Ensure Consul service
-      systemd:
-        name: consul
-        enabled: yes
-        state: started
-
-
-
 - hosts: 
     - masters
   become: yes
@@ -258,4 +237,46 @@
         path: /mnt/nfs_clientshare
         opts: rw,sync,hard,intr
         state: mounted
-        fstype: nfs
+#         fstype: nfs
+
+- hosts:
+    - all
+  become: yes
+  gather_facts: true
+  tasks:
+    - name: Register IP
+      shell: "echo {{ ansible_default_ipv4.address }}"
+      register: NOMAD_WORKERS_IP
+
+
+    - name: Templates Consul
+      ansible.builtin.template:
+        src: consul-client.j2
+        dest: /etc/consul.d/consul.hcl
+        owner: nomad
+        group: nomad
+        mode: 0644
+
+    - name: Ensure Consul service
+      systemd:
+        name: consul
+        enabled: yes
+        state: started
+
+    - name: Ensure" Nomad service
+      systemd:
+        name: nomad
+        enabled: yes
+        state: restarted
+
+    - name: Get Newrelic
+      get_url:
+        url:  https://raw.githubusercontent.com/newrelic/newrelic-cli/master/scripts/install.sh
+        dest: /tmp/install.sh
+        mode: 0777
+    
+    - name: Install Newrelic
+      shell: /tmp/install.sh
+    
+    - name: Configure Newrelic
+      shell: sudo NEW_RELIC_API_KEY=NRAK-3JBWJALKOLB6X5JOOZMWJOAY0CP NEW_RELIC_ACCOUNT_ID=3256386 /usr/local/bin/newrelic install
