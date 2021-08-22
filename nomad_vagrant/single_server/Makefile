@@ -62,6 +62,8 @@ client2:
 
 single_server: client1 
 	@vagrant up  machine1
+	@until ssh machine4 bash -c "echo 1";do sleep 60; done;
+	@make provision
 
 provision:
 	@cd provisioning/ansible && ansible-playbook -i hosts main.yml
@@ -70,4 +72,11 @@ base_job:
 	@cd nomad && or i in $$(ls | grep .nomad);do nomad job run $i;done;
 
 
-	
+halt_client2:
+	@terminator -T "Client 2" -e "ssh pegasus 'bash -s' < vagranthalt.sh"
+
+halt_client1:
+	@terminator -T "Client 1" -e "ssh andromeda 'bash -s' < vagranthalt.sh"
+
+halt: halt_client1 halt_client2
+	@vagrant halt machine1

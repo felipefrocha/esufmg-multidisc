@@ -1,7 +1,7 @@
 
-machine3 ansible_host=192.168.15.73 ansible_port=22 ansible_user='vagrant' ansible_ssh_private_key_file='/home/feliperocha/Documents/projects/pessoal/hashicorp/nomad/esufmg-multidisc/nomad_vagrant/single_server/keys/id_rsa'
-machine2 ansible_host=192.168.15.72 ansible_port=22 ansible_user='vagrant' ansible_ssh_private_key_file='/home/feliperocha/Documents/projects/pessoal/hashicorp/nomad/esufmg-multidisc/nomad_vagrant/single_server/keys/id_rsa'
 machine1 ansible_host=192.168.15.71 ansible_port=22 ansible_user='vagrant' ansible_ssh_private_key_file='/home/feliperocha/Documents/projects/pessoal/hashicorp/nomad/esufmg-multidisc/nomad_vagrant/single_server/keys/id_rsa'
+machine2 ansible_host=192.168.15.72 ansible_port=22 ansible_user='vagrant' ansible_ssh_private_key_file='/home/feliperocha/Documents/projects/pessoal/hashicorp/nomad/esufmg-multidisc/nomad_vagrant/single_server/keys/id_rsa'
+machine3 ansible_host=192.168.15.73 ansible_port=22 ansible_user='vagrant' ansible_ssh_private_key_file='/home/feliperocha/Documents/projects/pessoal/hashicorp/nomad/esufmg-multidisc/nomad_vagrant/single_server/keys/id_rsa'
 machine4 ansible_host=192.168.15.74 ansible_port=22 ansible_user='vagrant' ansible_ssh_private_key_file='/home/feliperocha/Documents/projects/pessoal/hashicorp/nomad/esufmg-multidisc/nomad_vagrant/single_server/keys/id_rsa'
 # machine5 ansible_host=192.168.15.75 ansible_port=22 ansible_user='vagrant' ansible_ssh_private_key_file='/home/feliperocha/Documents/projects/pessoal/hashicorp/nomad/esufmg-multidisc/nomad_vagrant/single_server/keys/id_rsa'
 # machine6 ansible_host=192.168.15.76 ansible_port=22 ansible_user='vagrant' ansible_ssh_private_key_file='/home/feliperocha/Documents/projects/pessoal/hashicorp/nomad/esufmg-multidisc/nomad_vagrant/single_server/keys/id_rsa'

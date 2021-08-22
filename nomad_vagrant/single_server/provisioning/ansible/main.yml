@@ -237,7 +237,7 @@
         path: /mnt/nfs_clientshare
         opts: rw,sync,hard,intr
         state: mounted
-#         fstype: nfs
+        fstype: nfs
 
 - hosts:
     - all
@@ -275,8 +275,8 @@
         dest: /tmp/install.sh
         mode: 0777
     
-    - name: Install Newrelic
-      shell: /tmp/install.sh
+    # - name: Install Newrelic
+    #   shell: /tmp/install.sh
     
     - name: Configure Newrelic
       shell: sudo NEW_RELIC_API_KEY=NRAK-3JBWJALKOLB6X5JOOZMWJOAY0CP NEW_RELIC_ACCOUNT_ID=3256386 /usr/local/bin/newrelic install
