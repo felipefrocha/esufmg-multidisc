@@ -1,7 +1,8 @@
 """
 Created on Sat Aug 14 20:11:15 2021
 
-@author: tiago
+@author: Tiago Lobato
+@coauthor: Felipe Rocha
 """
 import logging
 import pandas as pd
@@ -22,6 +23,11 @@ logging.basicConfig(format=FORMAT)
 ###
 
 def consolidar_cidades():
+    num_files_in_folder = len(os.listdir('cidades_temp_result'))
+    if num_files_in_folder < 10:
+        log.info('Not all files to analyzed yet')
+        exit(1)
+
     crs = {'init':'EPSG:4326'}
     kings_county_map = gpd.read_file('mapas/USA_States.shp')
     kings_county_map.crs = {'init' :'epsg:4326'}
@@ -29,9 +35,8 @@ def consolidar_cidades():
     
     arr=[]
     
-    
-    for i in range(9):
-        df_saida = pd.read_csv(f'saidas/cidades_temp_result/out{i+1}.csv') 
+    for i in range(num_files_in_folder):
+        df_saida = pd.read_csv(file) 
         arr.append(df_saida)
     
     

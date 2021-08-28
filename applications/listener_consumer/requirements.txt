@@ -1,0 +1,6 @@
+watchdog
+pandas
+numpy
+pyproj
+matplotlib
+geopandas

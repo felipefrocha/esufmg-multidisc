@@ -3,30 +3,37 @@
 Created on Sat Aug 14 20:11:15 2021
 
 @author: tiago
+@coauthor: Felipe Rocha
 """
+import os
 import logging
+import pyproj
 import pandas as pd
 import numpy as np 
-from matplotlib import pyplot as plt
-import pyproj
-pyproj.Proj("+init=epsg:4326")
-
 import geopandas as gpd
+from matplotlib import pyplot as plt
 from shapely.geometry import Point, Polygon
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+
+pyproj.Proj("+init=epsg:4326")
+
+###
+# Configure logs
+###
+log = logging.getLogger(__name__)
+log.setLevel(logging.DEBUG)
 FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 logging.basicConfig(format=FORMAT)
 ###
 # END - Configure logs
 ###
 
-def cidades_raiz(numero_arquivo:int):
+def process_city(file_name:str):
 
-    numero_arquivos = 2
+    log.info(f'File founded - /code/cidades_info/{file_name}')
+    df = pd.read_csv(f'/code/cidades_info/{file_name}') 
+
     
-    df = pd.read_csv(f'cidades_info/city_info{numero_arquivo}.csv') 
     df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
     df = df.groupby(['Name',"ID"]).mean().reset_index()
     
@@ -41,7 +48,12 @@ def cidades_raiz(numero_arquivo:int):
     
         name = row["Name"]
         id_cidade = row["ID"]
-        df_cidade = pd.read_csv(f'cidades_raiz/{id_cidade}.csv') 
+    
+        if os.path.isdir("/code/cidades_raiz"):
+            log.info(os.listdir('/code/cidades_raiz/'))
+            exit(1)
+
+        df_cidade = pd.read_csv(f'/code/cidades_raiz/{id_cidade}.csv') 
         
         df_cidade = df_cidade.loc[:, ~df_cidade.columns.str.contains('^Unnamed')]
         df_cidade = df_cidade.drop(columns=['prcp'])
@@ -61,7 +73,7 @@ def cidades_raiz(numero_arquivo:int):
         
         fig = plt.figure(index+numero_arquivo*100)
         plt.plot(date,temp_max,temp_min) 
-        plt.savefig(f'saidas/cidades_temp_imagens/{name}.png')
+        plt.savefig(f'/code/saidas/cidades_temp_imagens/{name}.png')
         plt.close(fig)
         
         resultado = temp_max_fim-temp_max_inicio
@@ -69,7 +81,7 @@ def cidades_raiz(numero_arquivo:int):
         df.loc[index,"temp_max_dif"]= resultado if resultado<2 else 2
         
     
-    df.to_csv(f'saidas/cidades_temp_result/out{numero_arquivo}.csv', index=False)  
+    df.to_csv(f'/code/saidas/cidades_temp_result/{file_name}', index=False)  
     
     
 

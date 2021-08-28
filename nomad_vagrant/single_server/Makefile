@@ -61,15 +61,20 @@ client2:
 	@terminator -T "Cliente 2" -e "ssh pegasus 'bash -s' < vagrantup.sh 3 && exit 0"
 
 single_server: client1 
+	@make consul_server
 	@vagrant up  machine1
 	@until ssh machine4 bash -c "echo 1";do sleep 60; done;
+	@until ssh machine3 bash -c "echo 1";do sleep 60; done;
+	@until ssh machine2 bash -c "echo 1";do sleep 60; done;
+	@until ssh machine1 bash -c "echo 1";do sleep 60; done;
 	@make provision
+	@make base_bogs
 
 provision:
 	@cd provisioning/ansible && ansible-playbook -i hosts main.yml
 
-base_job:
-	@cd nomad && or i in $$(ls | grep .nomad);do nomad job run $i;done;
+# base_job:
+# 	@cd nomad && or i in $$(ls | grep .nomad);do nomad job run $i;done;
 
 
 halt_client2:
@@ -80,3 +85,11 @@ halt_client1:
 
 halt: halt_client1 halt_client2
 	@vagrant halt machine1
+
+
+base_jobs:
+	@nomad job run nomad/fabio.nomad
+	@nomad job run nomad/monitoring.nomad
+
+clear_jobs:
+	@nomad job stop --purge monitoring
