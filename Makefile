@@ -1,9 +1,9 @@
 SHELL = /bin/bash
 .SHELLFLAGS = -evc
 
+machine_id ?= 2
 
-DOCKER_IMAGE = felipefrocha89/esufmg:multidisc
-APP_FOLDER = ./application
+export NOMAD_ADDR=http://nomad.server.local:4646
 
 install:
 	@echo Installing Libvirt QEMU e KVM
@@ -12,25 +12,10 @@ install:
 	@sudo systemctl start libvirtd
 	@sudo usermod -aG libvirt $$USER && sudo usermod -aG kvm $$USER
 
-clear:
-	@cd nomad_vagrant/single_server && make clear_ll
-	@cd nomad_vagrant/ha_server && make clear_ll
-	@cd nomad_vagrant/all_in_one && make clear_ll
-
-single_server:
-	@echo Up vagrant
-	@cd nomad_vagrant/single_server && make consul_server && make single_server
-
-run_local:
-	@docker build -t ${DOCKER_IMAGE} ${APP_FOLDER}
-	@docker run ${DOCKER_IMAGE}
-
-test_listener:
-	@docker build -t lixo listener_producer
-	@cd listener_producer && docker run --name lixo --rm -i -v $${PWD}/files:/code/files -u $${UID}:$${GID} lixo
-
-
-images:
+##
+# DOCKER COMMANDS
+##
+images: ## Create all images
 	@docker build -t felipefrocha89/esufmg:multidisc-consumer applications/listener_consumer
 	@docker build -t felipefrocha89/esufmg:multidisc-producer applications/listener_producer
 	@docker build -t felipefrocha89/esufmg:multidisc-analyzis applications/run_analyze
@@ -38,8 +23,52 @@ images:
 	@docker push  felipefrocha89/esufmg:multidisc-producer
 	@docker push  felipefrocha89/esufmg:multidisc-analyzis
 
-run_solution: images
-	@cd nomad_vagrant/single_server/nomad && nomad job run administer.nomad
+test_listener:
+	@docker build -t lixo listener_producer
+	@cd listener_producer && docker run --name lixo --rm -i -v $${PWD}/files:/code/files -u $${UID}:$${GID} lixo
 
-clear_jobs:
+##
+# SERVERS COMMANDS
+##
+single_server:
+	@echo "Up Vagrant - Single Server & Three Clients initialization"
+	@cd vagrant/single_server && make consul_server && make single_server
+	@terminator -T "Administer" -e "make run_solution && exit 0"
+	@terminator -T "Administer" -e "make start_application && exit 0"
+
+##
+# NOMAD COMMANDS
+##
+run_solution: images
+	@until nomad status; do echo "Waiting Nomad Server" && sleep 60; done;
+	@cd nomad_jobs && nomad job run administer.nomad
+
+base_jobs:
+	@nomad job run nomad/fabio.nomad
+	@nomad job run nomad/monitoring.nomad
+
+##
+# APPLICATION COMMANDS
+##
+start_application:
+	@until ssh machine1 bash -c "cd /mnt/nfs_share"; do echo "Waiting NFS" && sleep 60; done;
+	@ssh machine1 "cd /mnt/nfs_share \
+		&& sudo mkdir -p cidades_info cidades_raiz saidas/cidades_temp_result saidas/cidades_temp_imagens mapas \
+		&& sudo chmod -R 777 cidades_info cidades_raiz mapas saidas"
+	@scp -r data/cidades_raiz machine1:/mnt/nfs_share
+	@scp -r data/mapas machine1:/mnt/nfs_share
+	@scp -r data/saidas machine1:/mnt/nfs_share
+	
+copy_files:
+	@scp -r data/cidades_info/*.csv machine${machine_id}:/mnt/nfs_clientshare/cidades_info/
+
+clear_process_jobs:
 	@for i in $$(nomad job status | grep city_ | cut -d' ' -f1); do nomad job stop --purge $$i; done
+
+clear_all_jobs:
+	@for i in $$(nomad job status | cut -d' ' -f1); do nomad job stop --purge $$i; done
+
+clear:
+	@cd vagrant/single_server && make clear_all
+	# @cd vagrant/ha_server && make clear_all
+	# @cd vagrant/all_in_one && make clear_all

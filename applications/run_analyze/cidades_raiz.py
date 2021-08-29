@@ -49,7 +49,7 @@ def process_city(file_name:str):
         name = row["Name"]
         id_cidade = row["ID"]
     
-        if os.path.isdir("/code/cidades_raiz"):
+        if not os.path.isdir("/code/cidades_raiz"):
             log.info(os.listdir('/code/cidades_raiz/'))
             exit(1)
 
@@ -71,7 +71,7 @@ def process_city(file_name:str):
         temp_min_inicio = temp_min[30:].mean()
         temp_min_fim = temp_min[-30:].mean()
         
-        fig = plt.figure(index+numero_arquivo*100)
+        fig = plt.figure(index)
         plt.plot(date,temp_max,temp_min) 
         plt.savefig(f'/code/saidas/cidades_temp_imagens/{name}.png')
         plt.close(fig)

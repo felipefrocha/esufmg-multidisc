@@ -38,7 +38,7 @@ def create_job(name: str, file_name: str)-> str :
                 ],
                 "volumes": [
                   "/mnt/nfs_clientshare/cidades_info:/code/cidades_info",
-                  "/mnt/nfs_clientshare/cidade_raiz:/code/cidades_raiz",
+                  "/mnt/nfs_clientshare/cidades_raiz:/code/cidades_raiz",
                   "/mnt/nfs_clientshare/saidas:/code/saidas"
                 ],
                 "args": [
@@ -54,9 +54,9 @@ def create_job(name: str, file_name: str)-> str :
                 "NAME_FILE": "testeB"
               },
               "Resources": {
-                "CPU": 2000,
+                "CPU": 1024,
                 "Cores": 0,
-                "MemoryMB": 720,
+                "MemoryMB": 300,
                 "MemoryMaxMB": 0,
                 "DiskMB": 0,
                 "IOPS": 0,

@@ -26,7 +26,7 @@ class MonitorFolder(FileSystemEventHandler):
     def checkFolderSize(self, src_path, event):
         if os.path.isfile(event.src_path) and event.src_path.endswith(".csv"):
             file_name = event.src_path.split("/")[-1:][0]
-            log.info(f'Creating job {file_name} with {event.event_type}')
+            log.info(f'Consolidate City {file_name} with {event.event_type}')
             try:
               consolidar_cidades()
             except ex:

@@ -29,20 +29,23 @@ install:
 
 
 clear_client2:
-	@terminator -T "Client 2" -e "ssh pegasus 'bash -s' < vagrantdown.sh"
+	@terminator -T "Client 2" -e "ssh pegasus 'bash -s' < vagrantdown.sh && exit0"
 
 clear_client1:
-	@terminator -T "Client 1" -e "ssh andromeda 'bash -s' < vagrantdown.sh"
+	@terminator -T "Client 1" -e "ssh andromeda 'bash -s' < vagrantdown.sh && exit0"
+
+clear_server:
+	@terminator -T "Server" -e "make clear && exit0"
 
 clear:
-	@vagrant destroy -f
+	@vagrant destroy -f && rm -rf .vagrant
 
-clear_all: clear
-	@rm -rf .vagrant
-	@make clear_client2 clear_client1
+clear_all: 
+	@make clear_client2 clear_client1 clear_server 
 
 consul_server:
 	@docker container rm -f $$(docker container ls -aq) || echo ""
+	@docker pull hashicorp/consul
 	@docker run -d \
 		--name consul \
 		--net=host \
@@ -51,7 +54,7 @@ consul_server:
 		-p 8300-8302:8300-8302 \
 		-p 8500-8502:8500-8502 \
 		-p 8600:8600 \
-		consul agent -config-dir /etc/consul.d
+		hashicorp/consul agent -config-dir /etc/consul.d
 
 
 client1:
@@ -60,22 +63,20 @@ client1:
 client2:
 	@terminator -T "Cliente 2" -e "ssh pegasus 'bash -s' < vagrantup.sh 3 && exit 0"
 
-single_server: client1 
+server:
+	@terminator -T "Server" -e "vagrant up  machine1 && exit 0"
+
+single_server: 
+	@make server client1 
 	@make consul_server
-	@vagrant up  machine1
-	@until ssh machine4 bash -c "echo 1";do sleep 60; done;
-	@until ssh machine3 bash -c "echo 1";do sleep 60; done;
-	@until ssh machine2 bash -c "echo 1";do sleep 60; done;
 	@until ssh machine1 bash -c "echo 1";do sleep 60; done;
-	@make provision
-	@make base_bogs
+	@until ssh machine2 bash -c "echo 1";do sleep 60; done;
+	@until ssh machine3 bash -c "echo 1";do sleep 60; done;
+	@until ssh machine4 bash -c "echo 1";do sleep 60; done;
+	@terminator -T "Ansible Configuration" -e "make provision"
 
 provision:
 	@cd provisioning/ansible && ansible-playbook -i hosts main.yml
-
-# base_job:
-# 	@cd nomad && or i in $$(ls | grep .nomad);do nomad job run $i;done;
-
 
 halt_client2:
 	@terminator -T "Client 2" -e "ssh pegasus 'bash -s' < vagranthalt.sh"
@@ -85,11 +86,3 @@ halt_client1:
 
 halt: halt_client1 halt_client2
 	@vagrant halt machine1
-
-
-base_jobs:
-	@nomad job run nomad/fabio.nomad
-	@nomad job run nomad/monitoring.nomad
-
-clear_jobs:
-	@nomad job stop --purge monitoring

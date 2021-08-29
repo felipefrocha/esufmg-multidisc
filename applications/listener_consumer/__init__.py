@@ -21,7 +21,7 @@ logging.basicConfig(format=FORMAT)
 
 def create_observer(event_handler):
     log.info('OBSERVER - Geting File path to Observe')
-    path = f'{os.path.abspath(os.getcwd())}/saidas'
+    path = f'{os.path.abspath(os.getcwd())}/saidas/cidades_temp_result/'
     go_recursively = True
     observer = Observer()
 
