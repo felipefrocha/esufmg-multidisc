@@ -3,6 +3,17 @@ import logging
 from watchdog.events import FileSystemEventHandler
 import nomad
 
+###
+# Configure logs
+###
+log = logging.getLogger(__name__)
+log.setLevel(logging.DEBUG)
+FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+logging.basicConfig(format=FORMAT)
+###
+# END - Configure logs
+###
+
 
 def create_job(name: str, file_name: str)-> str :
   job =  {
@@ -33,6 +44,8 @@ def create_job(name: str, file_name: str)-> str :
               "User": "",
               "Config": {
                 "image": "felipefrocha89/esufmg:multidisc-analyzis",
+                "image_pull_timeout": "10m",
+                "cpu_hard_limit": True, 
                 "ports": [
                   "http"
                 ],
@@ -56,8 +69,8 @@ def create_job(name: str, file_name: str)-> str :
               "Resources": {
                 "CPU": 1024,
                 "Cores": 0,
-                "MemoryMB": 300,
-                "MemoryMaxMB": 0,
+                "MemoryMB": 256,
+                "MemoryMaxMB": 512,
                 "DiskMB": 0,
                 "IOPS": 0,
                 "Networks": None,
@@ -111,17 +124,10 @@ def create_job(name: str, file_name: str)-> str :
   return response
 
 
-
-###
-# Configure logs
-###
-log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
-FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-logging.basicConfig(format=FORMAT)
-###
-# END - Configure logs
-###
+def delete_job(name: str) -> str :
+  nomad_server = nomad.Nomad(host='192.168.15.71')
+  response = nomad_server.job.deregister_job(name)
+  return response
 
 class MonitorFolder(FileSystemEventHandler):
     FILE_SIZE=100000
@@ -136,11 +142,17 @@ class MonitorFolder(FileSystemEventHandler):
     def checkFolderSize(self, src_path, event):
         if os.path.isfile(event.src_path) and event.src_path.endswith(".csv"):
             file_name = event.src_path.split("/")[-1:][0]
-            log.info(f'Creating job {file_name} with {event.event_type}')
             try:
-              create_job(file_name.split(".")[0].replace(" ", "_"), file_name)
-            except ex:
-              log.error(ex)
+                name = file_name.split(".")[0].replace(" ", "_")
+                log.info(f'Deleting previous Job: {name}')
+                delete_job(name)
+                log.info(f'Job deleted: {name}')
+
+                log.info(f'Creating job {name} with {event.event_type}')
+                result = create_job(name, file_name)
+                log.info(f'Job Created: {result}')
+            except Exception as ex:
+                log.error(ex)
         else:
             log.info(f'Ignoring file: {event.src_path}, {event.event_type}')
       

@@ -2,6 +2,7 @@ import os
 import logging
 from watchdog.events import FileSystemEventHandler
 from consolidar_cidades import consolidar_cidades
+
 ###
 # Configure logs
 ###
@@ -26,10 +27,10 @@ class MonitorFolder(FileSystemEventHandler):
     def checkFolderSize(self, src_path, event):
         if os.path.isfile(event.src_path) and event.src_path.endswith(".csv"):
             file_name = event.src_path.split("/")[-1:][0]
-            log.info(f'Consolidate City {file_name} with {event.event_type}')
             try:
-              consolidar_cidades()
-            except ex:
+                log.info(f'Consolidate City {file_name} with {event.event_type}')
+                consolidar_cidades(file_name)
+            except Exception as ex:
               log.error(ex)
         else:
             log.info(f'Ignoring file: {event.src_path}, {event.event_type}')

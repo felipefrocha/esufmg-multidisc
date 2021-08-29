@@ -38,7 +38,7 @@ job "grafana" {
         GF_LOG_LEVEL = "DEBUG"
         GF_LOG_MODE = "console"
         GF_SERVER_HTTP_PORT = "${NOMAD_PORT_http}"
-        GF_INSTALL_PLUGINS = "grafana-clock-panel,grafana-simple-json-datasource"
+        GF_INSTALL_PLUGINS = "grafana-clock-panel,grafana-simple-json-datasource,natel-discrete-panel,grafana-piechart-panel"
       }
 
       resources {
