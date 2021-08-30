@@ -2,7 +2,7 @@ job "administer" {
 
   datacenters = ["rocha"]
   
-  type = "service"	
+  type = "system"	
   
   group "listener_producer_consumer" {
     count = 1
