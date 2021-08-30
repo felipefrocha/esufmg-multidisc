@@ -73,6 +73,7 @@ def process_city(file_name:str):
         
         fig = plt.figure(index)
         plt.plot(date,temp_max,temp_min) 
+        plt.gca().xaxis.set_major_locator(plt.MultipleLocator(20))
         plt.savefig(f'/code/saidas/cidades_temp_imagens/{name}.png')
         plt.close(fig)
         
