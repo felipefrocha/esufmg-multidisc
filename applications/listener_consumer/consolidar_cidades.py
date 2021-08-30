@@ -26,7 +26,7 @@ logging.basicConfig(format=FORMAT)
 # END - Configure logs
 ###
 
-def consolidar_cidades(name:str):
+def consolidar_cidades():
     num_files_in_folder = len(os.listdir('/code/saidas/cidades_temp_result'))
     if num_files_in_folder < 3:
         log.error('Not all files to analyzed yet')
@@ -43,8 +43,8 @@ def consolidar_cidades(name:str):
     
     log.info('Summarize cities')
     
-    for file in range(num_files_in_folder):
-        df_saida = pd.read_csv(file) 
+    for file in os.listdir('/code/saidas/cidades_temp_result'):
+        df_saida = pd.read_csv(f'/code/saidas/cidades_temp_result/{file}') 
         arr.append(df_saida)
     
     log.info('Threat summary')

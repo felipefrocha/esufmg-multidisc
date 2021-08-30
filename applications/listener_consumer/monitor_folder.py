@@ -29,7 +29,7 @@ class MonitorFolder(FileSystemEventHandler):
             file_name = event.src_path.split("/")[-1:][0]
             try:
                 log.info(f'Consolidate City {file_name} with {event.event_type}')
-                consolidar_cidades(file_name)
+                consolidar_cidades()
             except Exception as ex:
               log.error(ex)
         else:
