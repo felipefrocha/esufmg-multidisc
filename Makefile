@@ -19,9 +19,11 @@ images: ## Create all images
 	@docker build -t felipefrocha89/esufmg:multidisc-consumer applications/listener_consumer
 	@docker build -t felipefrocha89/esufmg:multidisc-producer applications/listener_producer
 	@docker build -t felipefrocha89/esufmg:multidisc-analyzis applications/run_analyze
+	@docker build -t felipefrocha89/esufmg:multidisc-webserver applications/web_server
 	@docker push  felipefrocha89/esufmg:multidisc-consumer
 	@docker push  felipefrocha89/esufmg:multidisc-producer
 	@docker push  felipefrocha89/esufmg:multidisc-analyzis
+	@docker push  felipefrocha89/esufmg:multidisc-webserver
 
 test_listener:
 	@docker build -t lixo listener_producer

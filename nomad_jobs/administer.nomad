@@ -9,7 +9,9 @@ job "administer" {
 
     network {
       // mbits = 100 # deprecated is no longer considered during the evaluation and scheduling
-      port "http" {}
+      port "http" {
+        to = 80
+      }
     }
 
     task "producer" {
@@ -62,6 +64,24 @@ job "administer" {
       resources {
         cpu = 256
         memory = 512
+      }
+    }
+    task "webserver" {
+      driver = "docker"
+    
+      config {
+        image = "felipefrocha89/esufmg:multidisc-webserver"
+        ports = ["http"]
+        volumes = [
+          "/mnt/nfs_clientshare/saidas/:/usr/share/nginx/html/saidas",
+          "/mnt/nfs_clientshare/mapas/:/usr/share/nginx/html/mapas"
+        ]
+        force_pull = true
+      }
+      
+      resources {
+        cpu = 10
+        memory = 128
       }
     }
   }
