@@ -1,0 +1,282 @@
+---
+- hosts: all
+  become: yes
+  tasks:
+    - name: Register current User
+      become: no
+      shell: id -u -n
+      register: current_user
+      changed_when: False
+
+    - name: Current User
+      debug:
+        msg: "{{ current_user.stdout }}"
+
+   
+    - name: add docker  apt signing key
+      apt_key:
+        url: "{{ item }}"
+        state: present
+      loop:
+        - https://download.docker.com/linux/ubuntu/gpg
+        - https://apt.releases.hashicorp.com/gpg
+
+    - name: add docker repository
+      apt_repository:
+        repo: "{{ item }}"
+        state: present
+      loop:
+        - "deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable"
+        - "deb [arch=amd64] https://apt.releases.hashicorp.com {{ansible_distribution_release}} main"
+      
+    - name: install docker latest version
+      apt:
+        pkg:
+          - ntp
+          - apt-transport-https 
+          - ca-certificates 
+          - curl 
+          - software-properties-common
+          - docker-ce
+          - nomad
+          - consul
+          - python3-pip
+        state: present
+        update_cache: yes
+
+    - name: Upgrade the OS (apt-get full-upgrade)
+      apt:
+        upgrade: full
+        autoremove: yes
+        autoclean: yes
+
+    - name: AutoComplete Command
+      shell: |
+        nomad -autocomplete-install
+        consul -autocomplete-install || echo 'consul nao tem autocomplete'
+
+    - name: add group and user for docker
+      user:
+        name: "{{item}}"
+        groups: docker
+        append: yes
+      loop:
+        - "{{ user }}"
+        - nomad
+        
+    - name: Install docker-compose
+      pip:
+        name: docker-compose
+        executable: pip3
+
+    - name: Create Nomad data folder 
+      file:
+        path: /opt/nomad/data
+        state: directory
+        owner: nomad
+        group: nomad
+        mode: 0644
+
+    - name:
+      get_url:
+        url: "https://github.com/cloudflare/cfssl/releases/download/v1.6.0/{{item}}_1.6.0_linux_amd64"
+        dest: "/tmp/{{item}}"
+        mode: '0440'
+      loop:
+        - cfssl
+        - cfssl-certinfo
+        - cfssljson
+
+    - name:
+      shell: |
+        install /tmp/{{item}} /usr/local/bin/{{item}}
+      loop:
+        - cfssl
+        - cfssl-certinfo
+        - cfssljson
+
+
+    - name: Edit Routes
+      shell: |
+        apt install -y net-tools
+        cat>/usr/bin/startup<<EOF
+        #!/bin/bash
+        route add default gw 192.168.15.1
+        $(route -n | awk '{ if ($8 =="eth0" && $2 != "0.0.0.0") print "route del default gw " $2; }')
+        swapoff -a
+        EOF
+        chmod +x /usr/bin/startup
+        cat>/etc/systemd/system/vagrant.service<<EOF
+        [Unit]
+        Description=Route Vagrant systemd service.
+        After=network.target
+        [Service]
+        Type=simple
+        ExecStart=/usr/bin/startup
+        [Install]
+        WantedBy=multi-user.target
+        EOF
+        chmod 644 /etc/systemd/system/vagrant.service
+
+    - name: Ensure Vagrant service
+      systemd:
+        name: vagrant
+        enabled: yes
+        state: started
+
+    - name: Ensure Docker service
+      systemd:
+        name: docker
+        enabled: yes
+        state: started
+    
+- hosts: 
+    - masters
+  become: yes
+  gather_facts: true
+  tasks:
+  - name: Register IP
+    shell: "echo {{ ansible_default_ipv4.address }}"
+    register: NOMAD_MASTER_IP
+
+
+  - name: Templates Server
+    ansible.builtin.template:
+      src: nomad-server.j2
+      dest: /etc/nomad.d/nomad.hcl
+      owner: nomad
+      group: nomad
+      mode: 0644
+
+  - name: Templates Environment
+    ansible.builtin.template:
+      src: nomad-profile.j2
+      dest: /etc/profile.d/nomad_profile.sh
+      # owner: nomad
+      # group: nomad
+      mode: 0644
+
+  
+  - name: Ensure Nomad service
+    systemd:
+      name: nomad
+      enabled: yes
+      state: started
+
+  - name: install NFS Server
+    apt:
+      pkg:
+        - nfs-kernel-server
+      state: present
+      update_cache: yes
+
+  - name: Create NFS Server folder 
+    file:
+      path: /mnt/nfs_share
+      state: directory
+      mode: 0777
+  
+  - name: Templates NFS
+    ansible.builtin.template:
+      src: exports.j2
+      dest: /etc/exports
+      mode: 0644
+
+
+  - name: Restart exports
+    shell: exportfs -a
+
+  - name: Ensure NFS service
+    systemd:
+      name: nfs-kernel-server
+      enabled: yes
+      state: started
+  
+- hosts:
+    - workers
+  become: yes
+  gather_facts: true
+  tasks:
+    - name: Register IP
+      shell: "echo {{ ansible_default_ipv4.address }}"
+      register: NOMAD_WORKERS_IP
+
+
+    - name: Templates Client
+      ansible.builtin.template:
+        src: nomad-client.j2
+        dest: /etc/nomad.d/nomad.hcl
+        owner: nomad
+        group: nomad
+        mode: 0644
+
+    - name: Ensure" Nomad service
+      systemd:
+        name: nomad
+        enabled: yes
+        state: started
+      
+    - name: install NFS Server
+      apt:
+        pkg:
+          - nfs-common
+        state: present
+        update_cache: yes
+
+    - name: Create NFS Client folder 
+      file:
+        path: /mnt/nfs_clientshare
+        state: directory
+        owner: nomad
+        group: nomad
+        mode: 0777
+
+    - name: Mount an NFS volume
+      ansible.posix.mount:
+        src: 192.168.15.71:/mnt/nfs_share
+        path: /mnt/nfs_clientshare
+        opts: rw,sync,hard,intr
+        state: mounted
+        fstype: nfs
+
+- hosts:
+    - all
+  become: yes
+  gather_facts: true
+  tasks:
+    - name: Register IP
+      shell: "echo {{ ansible_default_ipv4.address }}"
+      register: NOMAD_WORKERS_IP
+
+
+    - name: Templates Consul
+      ansible.builtin.template:
+        src: consul-client.j2
+        dest: /etc/consul.d/consul.hcl
+        owner: nomad
+        group: nomad
+        mode: 0644
+
+    - name: Ensure Consul service
+      systemd:
+        name: consul
+        enabled: yes
+        state: started
+
+    - name: Ensure" Nomad service
+      systemd:
+        name: nomad
+        enabled: yes
+        state: restarted
+
+    - name: Get Newrelic
+      get_url:
+        url:  https://raw.githubusercontent.com/newrelic/newrelic-cli/master/scripts/install.sh
+        dest: /tmp/install.sh
+        mode: 0777
+    
+    # - name: Install Newrelic
+    #   shell: /tmp/install.sh
+    
+    - name: Configure Newrelic
+      shell: sudo NEW_RELIC_API_KEY=NRAK-3JBWJALKOLB6X5JOOZMWJOAY0CP NEW_RELIC_ACCOUNT_ID=3256386 /usr/local/bin/newrelic install
